@@ -1,0 +1,1 @@
+# spoj solved problems
