@@ -1,84 +1,82 @@
 import math
+import timeit
+
+
+def odd_or_next(number, next_delta):
+    return number if number & 1 == 1 else (number + next_delta)
+
+
+def set_true(flags, n):
+    mask = 1 << ((n >> 1) & 31)
+    flags[n >> 6] |= mask
+
+
+def is_true(flags, n):
+    mask = 1 << ((n >> 1) & 31)
+    return (flags[n >> 6] & mask) == mask
 
 
 def simple_sieve(n):
+    limit = math.ceil(math.sqrt(n))
+    last_multiple = math.ceil(math.sqrt(limit))
+    is_not_prime = [0 for _ in range((limit >> 6) + 1)]
+    primes = []
 
-    last_multiple = math.ceil(math.sqrt(n))
+    for number in range(3, limit + 1, 2):
 
-    is_prime = [True for _ in range(2, n + 1)]
-    prime_numbers = []
-
-    for number in range(2, n + 1):
-
-        if not is_prime[number - 2]:
+        if is_true(is_not_prime, number):
             continue
 
-        prime_numbers.append(number)
+        primes.append(number)
 
         if number > last_multiple:
             continue
 
-        for multiple in range(number, n + 1, number):
-            is_prime[multiple - 2] = False
+        start = odd_or_next(number * number, number)
 
-    return prime_numbers
+        for not_prime in range(start, limit + 1, 2 * number):
+            set_true(is_not_prime, not_prime)
+
+    return primes
 
 
-def segmented_sieve(base_primes, start, end):
+def print_interval_primes(primes, start, end):
+    interval_primes = []
 
-    interval_size = math.ceil(math.sqrt(end))
-    is_prime = [True for _ in range(interval_size)]
-    prime_numbers = []
+    if start == 2:
+        interval_primes.append(2)
 
-    for interval_start in range(start, end + 1, interval_size):
-        for i in range(len(is_prime)):
-            is_prime[i] = True
+    start = odd_or_next(start, 1)
+    end = odd_or_next(end, -1)
+    size = end - start + 1
+    is_not_prime = [0 for _ in range((size >> 6) + 1)]
 
-        interval_end = min(end, interval_start + interval_size - 1)
+    for prime in primes:
+        not_prime = prime * prime
 
-        for base_prime in base_primes:
-            first_multiple = math.ceil(interval_start / base_prime) * base_prime
+        if not_prime > end:
+            break
+        elif not_prime < start:
+            not_prime = int(math.ceil(start / prime) * prime)
+            not_prime = odd_or_next(not_prime, prime)
 
-            if first_multiple == base_prime:
-                first_multiple += base_prime
+        for number in range(not_prime, end + 1, 2 * prime):
+            set_true(is_not_prime, number - start)
 
-            for number in range(first_multiple, interval_end + 1, base_prime):
-                is_prime[number - interval_start] = False
+    for number in range(start, end + 1, 2):
+        if not is_true(is_not_prime, number - start):
+            interval_primes.append(number)
 
-        for number in range(interval_start, interval_end + 1):
-            if is_prime[number - interval_start]:
-                prime_numbers.append(number)
-
-    return prime_numbers
+    print('\n'.join(map(str, interval_primes)))
 
 
 def run():
     test_cases = int(input())
     intervals = [tuple(map(int, input().split())) for _ in range(test_cases)]
-
-    min_start = min([start for (start, end) in intervals])
-    max_end = max([end for (start, end) in intervals])
-
-    base_primes = simple_sieve(math.ceil(math.sqrt(max_end)))
-    prime_numbers = segmented_sieve(base_primes, min_start, max_end)
+    max_end = max(end for start, end in intervals)
+    primes = simple_sieve(max_end)
 
     for (start, end) in intervals:
-        interval_prime_numbers = []
-        prime_number_index = 0
-
-        for prime_number in prime_numbers:
-            if prime_number < start:
-                prime_number_index += 1
-            else:
-                break
-
-        for _ in range(prime_number_index, len(prime_numbers)):
-            if prime_numbers[prime_number_index] <= end:
-                interval_prime_numbers.append(prime_numbers[prime_number_index])
-                prime_number_index += 1
-            else:
-                break
-
-        print("\n".join(map(str, interval_prime_numbers)))
+        print_interval_primes(primes, start, end)
 
 run()
