@@ -16,14 +16,12 @@ def is_true(flags, n):
     return (flags[n >> 6] & mask) == mask
 
 
-def simple_sieve(n):
-    limit = math.ceil(math.sqrt(n))
+def simple_sieve(limit):
     last_multiple = math.ceil(math.sqrt(limit))
     is_not_prime = [0 for _ in range((limit >> 6) + 1)]
     primes = []
 
     for number in range(3, limit + 1, 2):
-
         if is_true(is_not_prime, number):
             continue
 
@@ -40,16 +38,11 @@ def simple_sieve(n):
     return primes
 
 
-def print_interval_primes(primes, start, end):
-    interval_primes = []
-
-    if start == 2:
-        interval_primes.append(2)
-
+def print_interval_primes(start, end, primes, is_not_prime):
+    interval_primes = [2] if start == 2 else []
     start = odd_or_next(start, 1)
     end = odd_or_next(end, -1)
     size = end - start + 1
-    is_not_prime = [0 for _ in range((size >> 6) + 1)]
 
     for prime in primes:
         not_prime = prime * prime
@@ -60,11 +53,11 @@ def print_interval_primes(primes, start, end):
             not_prime = int(math.ceil(start / prime) * prime)
             not_prime = odd_or_next(not_prime, prime)
 
-        for number in range(not_prime, end + 1, 2 * prime):
-            set_true(is_not_prime, number - start)
+        for number in range(not_prime - start, size, 2 * prime):
+            set_true(is_not_prime, number)
 
-    for number in range(start, end + 1, 2):
-        if not is_true(is_not_prime, number - start):
+    for number in range(0, size, 2):
+        if not is_true(is_not_prime, number):
             interval_primes.append(number)
 
     print('\n'.join(map(str, interval_primes)))
@@ -73,10 +66,15 @@ def print_interval_primes(primes, start, end):
 def run():
     test_cases = int(input())
     intervals = [tuple(map(int, input().split())) for _ in range(test_cases)]
-    max_end = max(end for start, end in intervals)
-    primes = simple_sieve(max_end)
+    primes = simple_sieve(int(math.sqrt(2147483647)))
+    segment_size = int(math.ceil(math.sqrt(2147483647)))
+    segment_buffer = [0 for _ in range((segment_size >> 6) + 1)]
 
     for (start, end) in intervals:
-        print_interval_primes(primes, start, end)
+        for segment_start in range(start, end, segment_size):
+            for i in range(len(segment_buffer)):
+                segment_buffer[i] = 0
+            segment_end = min(segment_start + segment_size - 1, end)
+            print_interval_primes(segment_start, segment_end, primes, segment_buffer)
 
 run()
