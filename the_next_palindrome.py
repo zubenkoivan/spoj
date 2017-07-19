@@ -1,6 +1,3 @@
-import itertools
-
-
 def right_gte_left(integer):
     right_start = len(integer) // 2
     for i in range(right_start, len(integer)):
@@ -14,11 +11,11 @@ def right_gte_left(integer):
 
 
 def mirror_left(integer):
-    left_end = (len(integer) - 1) // 2
-    left = itertools.islice(integer, 0, left_end + 1)
-    right_start = len(integer) // 2 + (len(integer) & 1)
-    right = itertools.islice(reversed(integer), right_start, None)
-    return ''.join(itertools.chain(left, right))
+    middle = (len(integer) - 1) // 2 + 1
+    left = integer[0:middle]
+    if len(integer) & 1 == 0:
+        return left + left[::-1]
+    return left + left[-2::-1]
 
 
 def increment_left(integer):
@@ -33,6 +30,7 @@ def increment_left(integer):
             carry = 0
             break
     return (carry, left)
+
 
 def mirror_incremented_left(integer):
     carry, left = increment_left(integer)
