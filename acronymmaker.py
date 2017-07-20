@@ -12,7 +12,8 @@ def acronym_count(insign_words, line):
     words = ''.join(words)
     test_case = (prefix_counts, acc_words_lens, acronym, words)
     for word in range(1, len(prefix_counts)):
-        for acronym_idx in range(word - 1, word - 1 + max_symbols_per_word):
+        max_acronym_idx = (word - 1 + max_symbols_per_word) if word > 1 else 1
+        for acronym_idx in range(word - 1, max_acronym_idx):
             fill_prefix_counts(test_case, (word, acc_words_lens[word - 1], 0, acronym_idx))
     return (acronym.upper(), prefix_counts[-1][-1])
 
