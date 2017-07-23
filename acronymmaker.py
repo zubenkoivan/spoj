@@ -1,36 +1,61 @@
-import itertools
+class AcronymCounter:
+    max_words = 51
+    prefix_counts = [[0] * 75 for _ in range(max_words)]
+    words = [''] * max_words
+    max_acronym_indexes = [0] * max_words
 
 
-def acronym_count(insign_words, line):
-    acronym, words = split_words(insign_words, line)
-    max_symbols_per_word = len(acronym) - len(words) + 1
-    if max_symbols_per_word < 1:
-        return (acronym.upper(), 0)
-    acc_words_lens = get_acc_words_lens(words)
-    prefix_counts = [[0] * (len(acronym) + 1) for _ in range(len(words) + 1)]
-    prefix_counts[0][0] = 1
-    words = ''.join(words)
-    test_case = (prefix_counts, acc_words_lens, acronym, words)
-    for word in range(1, len(prefix_counts)):
-        max_acronym_idx = (word - 1 + max_symbols_per_word) if word > 1 else 1
-        for acronym_idx in range(word - 1, max_acronym_idx):
-            fill_prefix_counts(test_case, (word, acc_words_lens[word - 1], 0, acronym_idx))
-    return (acronym.upper(), prefix_counts[-1][-1])
+    def __init__(self, insignificant_words, all_words):
+        self._acronym = all_words[0].lower()
+        self._words_count = self.__init_words(insignificant_words, all_words)
+        self.prefix_counts[0][0] = 1
+        for i in range(1, self._words_count + 1):
+            self.max_acronym_indexes[i] = len(self._acronym) - self._words_count + i
 
 
-def fill_prefix_counts(test_case, state):
-    prefix_counts, acc_words_lens, acronym, words = test_case
-    word, words_idx, word_matched_len, acronym_idx = state
-    if words_idx == acc_words_lens[word] or acronym_idx == len(acronym):
-        return
-    max_acronym_idx = len(acronym) - (len(prefix_counts) - 1 - word)
-    for i in range(words_idx, acc_words_lens[word]):
-        if words[i] == acronym[acronym_idx]:
-            count = prefix_counts[word - 1][acronym_idx - word_matched_len]
-            prefix_counts[word][acronym_idx + 1] += count
+    def __init_words(self, insignificant_words, all_words):
+        count = 0
+        for i in range(1, len(all_words)):
+            if insignificant_words.get(all_words[i]) is not None:
+                continue
+            if count == self.max_words:
+                return -1
+            count += 1
+            self.words[count] = all_words[i]
+        return count
 
-            fork_state = (word, i + 1, word_matched_len, acronym_idx)
-            fill_prefix_counts(test_case, fork_state)
+
+    def __reset(self):
+        for i in range(self._words_count + 1):
+            for j in range(len(self._acronym) + 1):
+                self.prefix_counts[i][j] = 0
+
+
+    def count(self):
+        max_symbols_per_word = len(self._acronym) - self._words_count + 1
+        if self._words_count <= 0 or max_symbols_per_word < 1:
+            return 0
+        for w in range(1, self._words_count + 1):
+            max_acronym_idx = (w - 1 + max_symbols_per_word) if w > 1 else 1
+            for a in range(w - 1, max_acronym_idx):
+                self.__fill_prefix_counts(w, 0, 0, a)
+        count = self.prefix_counts[self._words_count][len(self._acronym)]
+        self.__reset()
+        return count
+
+
+    def __fill_prefix_counts(self, word, word_matched_len, word_idx, acronym_idx):
+        word_str = self.words[word]
+        word_len = len(word_str)
+        max_acronym_idx = self.max_acronym_indexes[word]
+        for i in range(word_idx, word_len):
+            if word_str[i] != self._acronym[acronym_idx]:
+                continue
+            count = self.prefix_counts[word - 1][acronym_idx - word_matched_len]
+            self.prefix_counts[word][acronym_idx + 1] += count
+
+            if i + 1 < word_len:
+                self.__fill_prefix_counts(word, word_matched_len, i + 1, acronym_idx)
 
             word_matched_len += 1
             acronym_idx += 1
@@ -39,26 +64,11 @@ def fill_prefix_counts(test_case, state):
                 break
 
 
-def split_words(insign_words, line):
-    words = line.split()
-    acronym = words[0].lower()
-    words = itertools.islice(words, 1, len(words))
-    words = list(filter(lambda x: insign_words.get(x) is None, words))
-    return (acronym, words)
-
-
-def get_acc_words_lens(words):
-    lens = [0]
-    lens.extend(map(len, words))
-    for i in range(1, len(lens)):
-        lens[i] += lens[i - 1]
-    return lens
-
-
-def acronym_count_str(acronym, count):
+def print_acronym_count(acronym, count):
     if count == 0:
-        return acronym + ' is not a valid abbreviation'
-    return acronym + ' can be formed in %d ways' % count
+        print(acronym + ' is not a valid abbreviation')
+    else:
+        print(acronym + ' can be formed in %d ways' % count)
 
 
 def read_test_cases():
@@ -73,13 +83,17 @@ def read_test_cases():
             line = input()
             if line == 'LAST CASE':
                 break
-            yield (insignificant_words, line)
+            yield (insignificant_words, line.split())
 
 
 def run():
-    acronyms_counts = map(lambda x: acronym_count(*x), read_test_cases())
-
-    print('\n'.join(map(lambda x: acronym_count_str(*x), acronyms_counts)))
+    acronyms_counts = []
+    for test_case in read_test_cases():
+        acronym = test_case[1][0]
+        counter = AcronymCounter(*test_case)
+        acronyms_counts.append((acronym, counter.count()))
+    for count in acronyms_counts:
+        print_acronym_count(*count)
 
 
 run()

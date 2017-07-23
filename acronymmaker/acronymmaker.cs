@@ -6,10 +6,10 @@ namespace acronymmaker
 {
     class AcronymsCounter
     {
-        private const int MaxWords = 75;
+        private const int MaxWords = 51;
+        private const int MaxAcronymLength = 75;
 
         private static long[][] PrefixCounts = new long[MaxWords][];
-        private static int[] WordLengths = new int[MaxWords];
         private static string[] Words = new string[MaxWords];
         private static int[] MaxAcronymIndexes = new int[MaxWords];
 
@@ -17,7 +17,7 @@ namespace acronymmaker
         {
             for (int i = 0; i < PrefixCounts.Length; ++i)
             {
-                PrefixCounts[i] = new long[MaxWords];
+                PrefixCounts[i] = new long[MaxAcronymLength];
             }
         }
 
@@ -26,27 +26,37 @@ namespace acronymmaker
 
         public AcronymsCounter(HashSet<string> insignificantWords, string[] words)
         {
-            PrefixCounts[0][0] = 1L;
             _acronym = words[0].ToLower();
+            _wordsCount = InitWords(insignificantWords, words);
+            PrefixCounts[0][0] = 1L;
 
+            for (int i = 1; i <= _wordsCount; ++i)
+            {
+                MaxAcronymIndexes[i] = _acronym.Length - _wordsCount + i;
+            }
+        }
+
+        private int InitWords(HashSet<string> insignificantWords, string[] words)
+        {
             int count = 0;
 
             for (int i = 1; i < words.Length; ++i)
             {
-                if (!insignificantWords.Contains(words[i]))
+                if (insignificantWords.Contains(words[i]))
                 {
-                    count += 1;
-                    Words[count] = words[i];
-                    WordLengths[count] = words[i].Length;
+                    continue;
                 }
+
+                if (count == MaxWords)
+                {
+                    return -1;
+                }
+
+                count += 1;
+                Words[count] = words[i];
             }
 
-            _wordsCount = count;
-
-            for (int i = 1; i <= count; ++i)
-            {
-                MaxAcronymIndexes[i] = _acronym.Length - _wordsCount + i;
-            }
+            return count;
         }
 
         private void Reset()
@@ -61,7 +71,7 @@ namespace acronymmaker
         {
             int maxSymbolsPerWord = _acronym.Length - _wordsCount + 1;
 
-            if (maxSymbolsPerWord < 1)
+            if (_wordsCount <= 0 || maxSymbolsPerWord < 1)
             {
                 return 0;
             }
@@ -85,12 +95,13 @@ namespace acronymmaker
 
         private void FillPrefixCounts(int word, int wordMatchedCount, int wordIndex, int acronymIndex)
         {
-            int wordLength = WordLengths[word];
+            string word_str = Words[word];
+            int wordLength = word_str.Length;
             int maxAcronymIndex = MaxAcronymIndexes[word];
 
             for (int i = wordIndex; i < wordLength; ++i)
             {
-                if (Words[word][i] != _acronym[acronymIndex])
+                if (word_str[i] != _acronym[acronymIndex])
                 {
                     continue;
                 }
