@@ -1,5 +1,5 @@
 import math
-import timeit
+import sys
 
 
 def odd_or_next(number, next_delta):
@@ -26,9 +26,9 @@ def simple_sieve(limit):
     return primes
 
 
-def print_interval_primes(start, end, primes, is_not_prime):
+def interval_primes(start, end, primes, is_prime):
     if start == 2:
-        print(2)
+        yield '2'
 
     start = odd_or_next(start, 1)
     end = odd_or_next(end, -1)
@@ -44,25 +44,28 @@ def print_interval_primes(start, end, primes, is_not_prime):
             not_prime = odd_or_next(not_prime, prime)
 
         for number in range(not_prime - start, size, 2 * prime):
-            is_not_prime[number] = True
-
-    print('\n'.join(str(start + number)
-                    for number in range(0, size, 2)
-                    if not is_not_prime[number]))
+            is_prime[number // 2] = False
+    for number in range(0, size, 2):
+        if is_prime[number // 2]:
+            yield str(start + number)
+    yield ''
 
 
 def run():
-    test_cases = int(input())
-    intervals = [tuple(map(int, input().split())) for _ in range(test_cases)]
+    sys.stdin.readline()
+    lines = sys.stdin.readlines()
+    intervals = map(lambda x: tuple(map(int, x.split())), lines)
     primes = simple_sieve(int(math.sqrt(2147483647)))
     segment_size = int(math.ceil(math.sqrt(2147483647)))
-    segment_buffer = [False for _ in range(segment_size)]
+    segment_buffer_size = (segment_size - 1) // 2 + 1
+    segment_buffer = [True for _ in range(segment_buffer_size)]
 
     for (start, end) in intervals:
         for segment_start in range(start, end, segment_size):
-            for i in range(len(segment_buffer)):
-                segment_buffer[i] = 0
+            for i in range(segment_buffer_size):
+                segment_buffer[i] = True
             segment_end = min(segment_start + segment_size - 1, end)
-            print_interval_primes(segment_start, segment_end, primes, segment_buffer)
+            result = interval_primes(segment_start, segment_end, primes, segment_buffer)
+            sys.stdout.write('\n'.join(result))
 
 run()
