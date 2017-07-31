@@ -24,12 +24,10 @@ def pow_mod(a, e, c):
 def mod_inverse(a, c):
     r0, r1 = a, c
     s0, s1 = 1, 0
-    t0, t1 = 0, 1
     while r1 > 0:
         q = r0 // r1
         r0, r1 = r1, r0 - q * r1
         s0, s1 = s1, s0 - q * s1
-        t0, t1 = t1, t0 - q * t1
     return s0
 
 
